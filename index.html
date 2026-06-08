@@ -186,9 +186,8 @@
     const SUPABASE_URL = 'https://ydsycrawzkwadvwuqxsn.supabase.co/'
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkc3ljcmF3emt3YWR2d3VxeHNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzUzMDEsImV4cCI6MjA5NjQ1MTMwMX0.4fikPG9v4hO3JGaGn3RuFg_Y-RFTYaC_1DwzjAPjXls'
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      db: { schema: 'jemuran' }
-    })
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    
 
     // ─── CONSTANTS ─────────────────────────────────────────────────────────────
     const WARN_DAYS = 4
