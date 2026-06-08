@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clothing Tracker 👕</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f3ef;
+      --surface: #ffffff;
+      --border: #e2ddd6;
+      --text: #1c1917;
+      --text2: #78716c;
+      --text3: #a8a29e;
+      --accent: #0ea5e9;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+      --radius: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141210;
+        --surface: #1e1a17;
+        --border: #2e2925;
+        --text: #f5f0eb;
+        --text2: #a8a29e;
+        --text3: #57534e;
+      }
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* HEADER */
+    .header { padding: 1.25rem 2rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); position: sticky; top: 0; z-index: 50; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { font-size: 1.5rem; }
+    .logo-text { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .logo-sub { font-size: 0.75rem; color: var(--text3); font-family: var(--font-mono); }
+    .btn-add { background: var(--text); color: var(--bg); border: none; border-radius: 8px; padding: 8px 16px; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; gap: 6px; }
+    .btn-add:hover { opacity: 0.8; }
+
+    /* BOARD */
+    .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 1.5rem 2rem; min-height: calc(100vh - 80px); align-items: start; }
+    @media (max-width: 900px) { .board { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .board { grid-template-columns: 1fr; padding: 1rem; } .header { padding: 1rem; } }
+
+    /* COLUMN */
+    .col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .col-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .col-title { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); }
+    .col-icon { font-size: 1rem; }
+    .col-count { font-family: var(--font-mono); font-size: 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; color: var(--text3); }
+    .col-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; transition: background 0.15s; }
+    .col-body.drag-over { background: rgba(14,165,233,0.05); }
+
+    /* CARD */
+    .cloth-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: grab; transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; position: relative; }
+    .cloth-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+    .cloth-card.dragging { opacity: 0.4; transform: scale(0.97); cursor: grabbing; }
+
+    /* Warning colors based on days hung */
+    .cloth-card.warn-ok { border-left: 3px solid #22c55e; }
+    .cloth-card.warn-mid { border-left: 3px solid #f59e0b; }
+    .cloth-card.warn-bad { border-left: 3px solid #ef4444; }
+    .cloth-card.warn-bad { animation: pulse-red 2s ease-in-out infinite; }
+    @keyframes pulse-red { 0%,100% { border-left-color: #ef4444; } 50% { border-left-color: #fca5a5; } }
+
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .card-name { font-size: 0.9rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+    .card-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.1s; flex-shrink: 0; }
+    .cloth-card:hover .card-actions { opacity: 1; }
+    .card-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; font-size: 0.7rem; cursor: pointer; color: var(--text2); transition: all 0.1s; line-height: 1; }
+    .card-btn:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .card-btn.del:hover { background: #ef4444; border-color: #ef4444; color: #fff; }
+    .card-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .card-cat { font-size: 0.7rem; font-weight: 600; color: var(--text3); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; text-transform: capitalize; }
+    .card-days { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text3); }
+    .card-days.warn-mid { color: #f59e0b; font-weight: 500; }
+    .card-days.warn-bad { color: #ef4444; font-weight: 700; }
+
+    /* MOVE BUTTONS */
+    .card-moves { display: flex; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .move-btn { flex: 1; font-family: var(--font-body); font-size: 0.7rem; font-weight: 600; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text2); cursor: pointer; transition: all 0.15s; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .move-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* EMPTY STATE */
+    .col-empty { text-align: center; padding: 1.5rem 1rem; color: var(--text3); font-size: 0.8rem; font-weight: 500; }
+    .col-empty .empty-icon { font-size: 1.5rem; margin-bottom: 6px; }
+
+    /* NOTIFICATION BANNER */
+    .notif-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 14px; margin: 0 2rem 0; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 600; color: #dc2626; display: none; }
+    .notif-banner.show { display: flex; margin-top: 1rem; }
+    @media(max-width:500px){ .notif-banner { margin: 0.75rem 1rem 0; } }
+
+    /* MODAL */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
+    .overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.75rem; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); animation: popIn 0.2s ease; }
+    @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .field input, .field select { width: 100%; padding: 9px 12px; font-family: var(--font-body); font-size: 0.9rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); outline: none; transition: border-color 0.15s; }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 1.25rem; justify-content: flex-end; }
+    .btn-cancel { font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; }
+    .btn-cancel:hover { background: var(--bg); }
+    .btn-save { font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; padding: 8px 20px; border-radius: 8px; border: none; background: var(--text); color: var(--bg); cursor: pointer; transition: opacity 0.15s; }
+    .btn-save:hover { opacity: 0.8; }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: var(--bg); font-weight: 600; font-size: 0.85rem; padding: 10px 20px; border-radius: 999px; transition: transform 0.3s; z-index: 500; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* LOADING */
+    .loading { text-align: center; padding: 3rem; color: var(--text3); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-icon">👔</div>
+      <div>
+        <div class="logo-text">Clothing Tracker</div>
+        <div class="logo-sub">track pakaian kamu</div>
+      </div>
+    </div>
+    <button class="btn-add" onclick="openModal()">+ Tambah Pakaian</button>
+  </header>
+
+  <div class="notif-banner" id="notif-banner">
+    ⚠️ <span id="notif-text"></span>
+  </div>
+
+  <div class="board" id="board">
+    <div class="loading">Memuat data...</div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2 id="modal-title">Tambah Pakaian</h2>
+      <div class="field">
+        <label>Nama Pakaian</label>
+        <input type="text" id="inp-name" placeholder="contoh: Jaket Hitam Nike" maxlength="40" />
+      </div>
+      <div class="field">
+        <label>Kategori</label>
+        <select id="inp-cat">
+          <option value="jaket">🧥 Jaket</option>
+          <option value="kaos">👕 Kaos</option>
+          <option value="kemeja">👔 Kemeja</option>
+          <option value="celana">👖 Celana</option>
+          <option value="hoodie">🫂 Hoodie</option>
+          <option value="sweater">🧶 Sweater</option>
+          <option value="lainnya">📦 Lainnya</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status Awal</label>
+        <select id="inp-status">
+          <option value="digantung">👔 Digantung</option>
+          <option value="keranjang_kamar">🧺 Keranjang Kamar</option>
+          <option value="keranjang_laundry">🫧 Keranjang Laundry</option>
+          <option value="lemari">🗄️ Lemari</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Batal</button>
+        <button class="btn-save" id="btn-save" onclick="saveCloth()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+    // ⚠️ GANTI dengan kredensial Supabase kamu
+    const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co'
+    const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    // ─── CONSTANTS ─────────────────────────────────────────────────────────────
+    const WARN_DAYS = 4
+    const STATUSES = [
+      { key: 'digantung',         label: 'Digantung',         icon: '👔', empty: 'Tidak ada yang digantung' },
+      { key: 'keranjang_kamar',   label: 'Keranjang Kamar',   icon: '🧺', empty: 'Keranjang kamar kosong' },
+      { key: 'keranjang_laundry', label: 'Keranjang Laundry', icon: '🫧', empty: 'Tidak ada yang di laundry' },
+      { key: 'lemari',            label: 'Lemari',            icon: '🗄️', empty: 'Lemari kosong' },
+    ]
+    const STATUS_KEYS = STATUSES.map(s => s.key)
+    const CAT_ICONS = { jaket:'🧥', kaos:'👕', kemeja:'👔', celana:'👖', hoodie:'🫂', sweater:'🧶', lainnya:'📦' }
+
+    // ─── STATE ─────────────────────────────────────────────────────────────────
+    let clothes = []
+    let editingId = null
+    let dragId = null
+
+    // ─── SUPABASE ──────────────────────────────────────────────────────────────
+    async function fetchClothes() {
+      const { data, error } = await supabase
+        .from('clothes')
+        .select('*')
+        .order('created_at', { ascending: true })
+      if (error) { showToast('❌ Gagal memuat data'); return; }
+      clothes = data || []
+      render()
+      checkWarnings()
+    }
+
+    async function insertCloth(obj) {
+      const { data, error } = await supabase.from('clothes').insert(obj).select().single()
+      if (error) { showToast('❌ Gagal menyimpan'); return null; }
+      return data
+    }
+
+    async function updateCloth(id, fields) {
+      const { error } = await supabase.from('clothes').update(fields).eq('id', id)
+      if (error) { showToast('❌ Gagal mengupdate'); return false; }
+      return true
+    }
+
+    async function deleteCloth(id) {
+      const { error } = await supabase.from('clothes').delete().eq('id', id)
+      if (error) { showToast('❌ Gagal menghapus'); return false; }
+      return true
+    }
+
+    // ─── HELPERS ───────────────────────────────────────────────────────────────
+    function daysSince(isoStr) {
+      const diff = Date.now() - new Date(isoStr).getTime()
+      return Math.floor(diff / (1000 * 60 * 60 * 24))
+    }
+
+    function warnClass(cloth) {
+      if (cloth.status !== 'digantung') return ''
+      const d = daysSince(cloth.status_since)
+      if (d >= WARN_DAYS) return 'warn-bad'
+      if (d >= Math.floor(WARN_DAYS / 2)) return 'warn-mid'
+      return 'warn-ok'
+    }
+
+    function daysLabel(cloth) {
+      if (cloth.status === 'lemari') return ''
+      const d = daysSince(cloth.status_since)
+      return d === 0 ? 'Hari ini' : `${d} hari`
+    }
+
+    function daysClass(cloth) {
+      if (cloth.status !== 'digantung') return ''
+      const d = daysSince(cloth.status_since)
+      if (d >= WARN_DAYS) return 'warn-bad'
+      if (d >= Math.floor(WARN_DAYS / 2)) return 'warn-mid'
+      return ''
+    }
+
+    function nextStatuses(currentKey) {
+      const idx = STATUS_KEYS.indexOf(currentKey)
+      const moves = []
+      if (idx > 0) moves.push({ key: STATUS_KEYS[idx - 1], label: '← ' + STATUSES[idx - 1].label })
+      if (idx < STATUS_KEYS.length - 1) moves.push({ key: STATUS_KEYS[idx + 1], label: STATUSES[idx + 1].label + ' →' })
+      return moves
+    }
+
+    function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+    // ─── RENDER ────────────────────────────────────────────────────────────────
+    function render() {
+      const board = document.getElementById('board')
+      board.innerHTML = STATUSES.map(st => {
+        const items = clothes.filter(c => c.status === st.key)
+        return `
+          <div class="col">
+            <div class="col-header">
+              <div class="col-title">
+                <span class="col-icon">${st.icon}</span>
+                ${st.label}
+              </div>
+              <span class="col-count">${items.length}</span>
+            </div>
+            <div class="col-body" data-status="${st.key}"
+              ondragover="handleDragOver(event)"
+              ondragleave="handleDragLeave(event)"
+              ondrop="handleDrop(event, '${st.key}')">
+              ${items.length === 0 ? `
+                <div class="col-empty">
+                  <div class="empty-icon">${st.icon}</div>
+                  ${st.empty}
+                </div>` :
+                items.map(c => cardHtml(c)).join('')
+              }
+            </div>
+          </div>
+        `
+      }).join('')
+    }
+
+    function cardHtml(c) {
+      const days = daysLabel(c)
+      const moves = nextStatuses(c.status)
+      const catIcon = CAT_ICONS[c.category] || '📦'
+      return `
+        <div class="cloth-card ${warnClass(c)}"
+          draggable="true"
+          data-id="${c.id}"
+          ondragstart="handleDragStart(event, '${c.id}')">
+          <div class="card-top">
+            <div class="card-name">${catIcon} ${escHtml(c.name)}</div>
+            <div class="card-actions">
+              <button class="card-btn" onclick="openModal('${c.id}')">✏️</button>
+              <button class="card-btn del" onclick="handleDelete('${c.id}')">🗑️</button>
+            </div>
+          </div>
+          <div class="card-meta">
+            <span class="card-cat">${c.category}</span>
+            ${days ? `<span class="card-days ${daysClass(c)}">${days}</span>` : ''}
+          </div>
+          ${moves.length ? `
+            <div class="card-moves">
+              ${moves.map(m => `
+                <button class="move-btn" onclick="moveCloth('${c.id}', '${m.key}')">${m.label}</button>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `
+    }
+
+    // ─── WARNINGS ──────────────────────────────────────────────────────────────
+    function checkWarnings() {
+      const overdue = clothes.filter(c => c.status === 'digantung' && daysSince(c.status_since) >= WARN_DAYS)
+      const banner = document.getElementById('notif-banner')
+      const text = document.getElementById('notif-text')
+      if (overdue.length > 0) {
+        text.textContent = `${overdue.length} pakaian sudah digantung ≥${WARN_DAYS} hari: ${overdue.map(c=>c.name).join(', ')}`
+        banner.classList.add('show')
+        // Browser notification
+        if (Notification.permission === 'granted') {
+          new Notification('Clothing Tracker ⚠️', {
+            body: `${overdue.length} pakaian perlu segera dicuci!`,
+            icon: '👔'
+          })
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission()
+        }
+      } else {
+        banner.classList.remove('show')
+      }
+    }
+
+    // ─── MOVE ──────────────────────────────────────────────────────────────────
+    async function moveCloth(id, newStatus) {
+      const c = clothes.find(x => x.id === id)
+      if (!c) return
+      const ok = await updateCloth(id, { status: newStatus, status_since: new Date().toISOString() })
+      if (ok) {
+        c.status = newStatus
+        c.status_since = new Date().toISOString()
+        render()
+        checkWarnings()
+        const st = STATUSES.find(s => s.key === newStatus)
+        showToast(`${st.icon} Dipindah ke ${st.label}`)
+      }
+    }
+
+    // ─── DELETE ────────────────────────────────────────────────────────────────
+    async function handleDelete(id) {
+      if (!confirm('Hapus pakaian ini?')) return
+      const ok = await deleteCloth(id)
+      if (ok) {
+        clothes = clothes.filter(c => c.id !== id)
+        render(); checkWarnings()
+        showToast('🗑️ Pakaian dihapus')
+      }
+    }
+
+    // ─── DRAG & DROP ───────────────────────────────────────────────────────────
+    function handleDragStart(e, id) {
+      dragId = id
+      setTimeout(() => { document.querySelector(`[data-id="${id}"]`)?.classList.add('dragging') }, 0)
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault()
+      e.currentTarget.classList.add('drag-over')
+    }
+
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove('drag-over')
+    }
+
+    async function handleDrop(e, newStatus) {
+      e.preventDefault()
+      e.currentTarget.classList.remove('drag-over')
+      document.querySelectorAll('.cloth-card').forEach(c => c.classList.remove('dragging'))
+      if (!dragId) return
+      const c = clothes.find(x => x.id === dragId)
+      if (!c || c.status === newStatus) { dragId = null; return; }
+      await moveCloth(dragId, newStatus)
+      dragId = null
+    }
+
+    // ─── MODAL ─────────────────────────────────────────────────────────────────
+    function openModal(id) {
+      editingId = id || null
+      const isEdit = !!id
+      document.getElementById('modal-title').textContent = isEdit ? 'Edit Pakaian' : 'Tambah Pakaian'
+      if (isEdit) {
+        const c = clothes.find(x => x.id === id)
+        document.getElementById('inp-name').value = c.name
+        document.getElementById('inp-cat').value = c.category
+        document.getElementById('inp-status').value = c.status
+      } else {
+        document.getElementById('inp-name').value = ''
+        document.getElementById('inp-cat').value = 'jaket'
+        document.getElementById('inp-status').value = 'digantung'
+      }
+      document.getElementById('overlay').classList.add('open')
+      setTimeout(() => document.getElementById('inp-name').focus(), 80)
+    }
+
+    function closeModal() {
+      document.getElementById('overlay').classList.remove('open')
+    }
+
+    async function saveCloth() {
+      const name = document.getElementById('inp-name').value.trim()
+      const category = document.getElementById('inp-cat').value
+      const status = document.getElementById('inp-status').value
+      if (!name) { document.getElementById('inp-name').focus(); return; }
+
+      const btn = document.getElementById('btn-save')
+      btn.disabled = true; btn.textContent = 'Menyimpan...'
+
+      if (editingId) {
+        const c = clothes.find(x => x.id === editingId)
+        const statusChanged = c.status !== status
+        const fields = { name, category, status }
+        if (statusChanged) fields.status_since = new Date().toISOString()
+        const ok = await updateCloth(editingId, fields)
+        if (ok) { Object.assign(c, fields); showToast('✅ Pakaian diperbarui') }
+      } else {
+        const newCloth = await insertCloth({
+          name, category, status,
+          status_since: new Date().toISOString()
+        })
+        if (newCloth) { clothes.push(newCloth); showToast('✅ Pakaian ditambahkan') }
+      }
+
+      btn.disabled = false; btn.textContent = 'Simpan'
+      closeModal(); render(); checkWarnings()
+    }
+
+    // ─── TOAST ─────────────────────────────────────────────────────────────────
+    let toastTimer
+    function showToast(msg) {
+      const t = document.getElementById('toast')
+      t.textContent = msg; t.classList.add('show')
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2500)
+    }
+
+    // ─── KEYBOARD ──────────────────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeModal()
+      if (e.key === 'Enter' && document.getElementById('overlay').classList.contains('open')) {
+        e.preventDefault(); saveCloth()
+      }
+    })
+    document.getElementById('overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('overlay')) closeModal()
+    })
+
+    // expose to inline onclick
+    window.openModal = openModal
+    window.closeModal = closeModal
+    window.saveCloth = saveCloth
+    window.handleDelete = handleDelete
+    window.moveCloth = moveCloth
+    window.handleDragStart = handleDragStart
+    window.handleDragOver = handleDragOver
+    window.handleDragLeave = handleDragLeave
+    window.handleDrop = handleDrop
+
+    // ─── INIT ──────────────────────────────────────────────────────────────────
+    fetchClothes()
+    // Refresh hari setiap menit supaya warning timer akurat
+    setInterval(() => { render(); checkWarnings(); }, 60 * 1000)
+  </script>
+</body>
+</html>
