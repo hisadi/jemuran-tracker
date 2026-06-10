@@ -238,8 +238,11 @@
 
     // ─── HELPERS ───────────────────────────────────────────────────────────────
     function daysSince(isoStr) {
-      const diff = Date.now() - new Date(isoStr).getTime()
-      return Math.floor(diff / (1000 * 60 * 60 * 24))
+      const start = new Date(isoStr)
+      const now = new Date()
+      const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+      const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      return Math.round((nowDay - startDay) / (1000 * 60 * 60 * 24))
     }
 
     function warnClass(cloth) {
@@ -253,7 +256,14 @@
     function daysLabel(cloth) {
       if (cloth.status === 'lemari') return ''
       const d = daysSince(cloth.status_since)
-      return d === 0 ? 'Hari ini' : `${d} hari`
+      const date = new Date(cloth.status_since)
+      const days = ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
+      const dayName = days[date.getDay()]
+      const dateStr = `${date.getDate()} ${months[date.getMonth()]}`
+      const timeStr = `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+      const label = d === 0 ? 'Hari ini' : d === 1 ? '1 hari' : `${d} hari`
+      return `${label} · ${dayName}, ${dateStr} ${timeStr}`
     }
 
     function daysClass(cloth) {
