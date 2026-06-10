@@ -170,6 +170,10 @@
           <option value="lemari">🗄️ Lemari</option>
         </select>
       </div>
+      <div class="field" id="field-since">
+        <label>Tanggal & Jam Masuk</label>
+        <input type="datetime-local" id="inp-since" />
+      </div>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeModal()">Batal</button>
         <button class="btn-save" id="btn-save" onclick="saveCloth()">Simpan</button>
@@ -435,6 +439,19 @@
         document.getElementById('inp-cat').value = 'jaket'
         document.getElementById('inp-status').value = 'digantung'
       }
+      // Isi field tanggal jika edit
+      const sinceField = document.getElementById('field-since')
+      if (isEdit) {
+        const c = clothes.find(x => x.id === id)
+        // Convert ISO ke format datetime-local
+        const d = new Date(c.status_since)
+        const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+          .toISOString().slice(0, 16)
+        document.getElementById('inp-since').value = local
+        sinceField.style.display = ''
+      } else {
+        sinceField.style.display = 'none'
+      }
       document.getElementById('overlay').classList.add('open')
       setTimeout(() => document.getElementById('inp-name').focus(), 80)
     }
@@ -455,8 +472,13 @@
       if (editingId) {
         const c = clothes.find(x => x.id === editingId)
         const statusChanged = c.status !== status
+        const sinceInput = document.getElementById('inp-since').value
         const fields = { name, category, status }
-        if (statusChanged) fields.status_since = new Date().toISOString()
+        if (sinceInput) {
+          fields.status_since = new Date(sinceInput).toISOString()
+        } else if (statusChanged) {
+          fields.status_since = new Date().toISOString()
+        }
         const ok = await updateCloth(editingId, fields)
         if (ok) { Object.assign(c, fields); showToast('✅ Pakaian diperbarui') }
       } else {
